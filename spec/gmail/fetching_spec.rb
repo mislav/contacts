@@ -12,7 +12,8 @@ describe Contacts::Gmail do
     gmail = create
     gmail.expects(:query_string).returns('a=b')
     connection = mock('HTTP connection')
-    response = stub('HTTP response', :is_a? => true)
+    response = mock('HTTP response')
+    response.stubs(:is_a?).with(Net::HTTPSuccess).returns(true)
     Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
     connection.expects(:get).with('/m8/feeds/contacts/example%40gmail.com/base?a=b', {
         'Authorization' => %(AuthSub token="dummytoken"),
@@ -65,6 +66,63 @@ describe Contacts::Gmail do
     u.year.should == 2008
     u.day.should == 5
     gmail.updated_at_string.should == '2008-03-05T12:36:38.836Z'
+  end
+
+  describe 'GET query parameter handling' do
+    before do
+      @connection = mock('HTTP connection')
+      response = mock('HTTP response')
+      response.stubs(:is_a?).with(Net::HTTPSuccess).returns(true)
+      Net::HTTP.stubs(:start).yields(@connection).returns(response)
+    end
+    
+    it 'abstracts ugly parameters behind nicer ones' do
+      gmail = create :limit => 25,
+        :offset => 10,
+        :order => 'lastmodified',
+        :descending => false,
+        :updated_after => 'datetime'
+      
+      expect_params %w( max-results=25
+                        orderby=lastmodified
+                        sortorder=ascending
+                        start-index=11
+                        updated-min=datetime )
+
+      gmail.get
+    end
+
+    it 'should have implicit :descending with :order' do
+      gmail = create :order => 'lastmodified'
+      expect_params %w( orderby=lastmodified
+                        sortorder=descending ), true
+      gmail.get
+    end
+
+    it 'should have default :limit of 200' do
+      gmail = create
+      expect_params %w( max-results=200 )
+      gmail.get
+    end
+
+    it 'should skip nil values in parameters' do
+      gmail = create :limit => nil, :offset => 0
+      expect_params %w( start-index=1 )
+      gmail.get
+    end
+
+    def expect_params(params, some = false)
+      @connection.expects(:get).with() do |path, headers|
+        pairs = path.split('?').last.split('&').sort
+        unless some
+          pairs.should == params
+          pairs.size == params.size
+        else
+          params.each {|p| pairs.should include(p) }
+          pairs.size >= params.size
+        end
+      end
+    end
   end
 
   def create(options = {})

@@ -18,9 +18,9 @@ namespace :spec do
     t.spec_opts = ['--options', spec_opts]
     t.spec_files = spec_glob
     t.rcov = true
-    t.rcov_opts = lambda do
-      IO.readlines('spec/rcov.opts').map {|l| l.chomp.split " "}.flatten
-    end
+    # t.rcov_opts = lambda do
+    #   IO.readlines('spec/rcov.opts').map {|l| l.chomp.split " "}.flatten
+    # end
   end
   
   desc 'Print Specdoc for all specs'

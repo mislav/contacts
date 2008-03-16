@@ -55,28 +55,29 @@ module Contacts
     def query_string
       @params.inject [] do |url, pair|
         value = pair.last
-        return url if value.nil?
-        
-        # max-results / start-index / updated-min / orderby lastmodified / sortorder
-        key = case pair.first
-          when :limit
-            'max-results'
-          when :offset
-            value = value.to_i + 1
-            'start-index'
-          when :order
-            url << 'sortorder=descending' unless @params.key? :descending
-            'orderby'
-          when :descending
-            value = value ? 'descending' : 'ascending'
-            'sortorder'
-          when :updated_after
-            value = value.strftime("%Y-%m-%dT%H:%M:%S%Z") if value.respond_to? :strftime
-            'updated-min'
-          else pair.first
-          end
-        
-        url << "#{key}=#{CGI.escape(value.to_s)}"
+        unless value.nil?
+          # max-results / start-index / updated-min / orderby lastmodified / sortorder
+          key = case pair.first
+            when :limit
+              'max-results'
+            when :offset
+              value = value.to_i + 1
+              'start-index'
+            when :order
+              url << 'sortorder=descending' if @params[:descending].nil?
+              'orderby'
+            when :descending
+              value = value ? 'descending' : 'ascending'
+              'sortorder'
+            when :updated_after
+              value = value.strftime("%Y-%m-%dT%H:%M:%S%Z") if value.respond_to? :strftime
+              'updated-min'
+            else pair.first
+            end
+          
+          url << "#{key}=#{CGI.escape(value.to_s)}"
+        end
+        url
       end.join('&')
     end
 
