@@ -19,6 +19,7 @@ Use that token in the next step:
 
 This is still alpha. It has been tested only with mocks, not live.
 Feel free to contribute; I plan to support more APIs (Microsoft, etc).
+Read more in Contacts::Gmail.
 
 Author: Mislav Marohnić (mislav.marohnic@gmail.com)
 
@@ -27,11 +28,18 @@ Author: Mislav Marohnić (mislav.marohnic@gmail.com)
 Contacts::Gmail.authentication_url
 - generates a URL for target with default parameters
 - should handle boolean parameters
+- skips parameters that have nil value
 
 Contacts::Gmail
-- is ready to query contacts from a specific account
+- should be set to query contacts from a specific account
 - fetches contacts feed via HTTP GET
 - handles gzipped response
 - raises a FetchingError when something goes awry
 - parses the resulting feed into name/email pairs
 - makes modification time available after parsing
+
+Contacts::Gmail GET query parameter handling
+- abstracts ugly parameters behind nicer ones
+- should have implicit :descending with :order
+- should have default :limit of 200
+- should skip nil values in parameters

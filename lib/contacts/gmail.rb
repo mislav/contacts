@@ -6,15 +6,38 @@ require 'hpricot'
 require 'date'
 
 module Contacts
-  # AuthSub proxy authentication is used by web applications that need to
-  # authenticate their users to Google Accounts.
+  # Web applications should use
+  # AuthSub[http://code.google.com/apis/contacts/developers_guide_protocol.html#auth_sub]
+  # proxy authentication to get an authentication token for a Google account.
   # 
-  # http://code.google.com/apis/contacts/developers_guide_protocol.html#auth_sub
+  # First, get the user to follow the following URL:
+  # 
+  #   Contacts::Gmail.authentication_url('http://mysite.com/invite')
+  #
+  # After he authenticates successfully, Google will redirect him back to the target URL
+  # (specified as argument above) and provide the token GET parameter. Use it to create a
+  # new instance of this class and request the contact list:
+  #
+  #   gmail = Contacts::Gmail.new('example@gmail.com', params[:token])
+  #   contacts = gmail.contacts
+  #   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
+  #         ['William Paginate', 'will.paginate@gmail.com'], ...
+  #         ]
   class Gmail
     DOMAIN     = 'www.google.com'
     AuthSubURL = "https://#{DOMAIN}/accounts/AuthSubRequest"
     AuthScope  = "http://#{DOMAIN}/m8/feeds/"
 
+    # URL to Google site where user authenticates. Afterwards, Google redirects to your
+    # site with the URL specified as +target+.
+    #
+    # Options are:
+    # * <tt>:scope</tt> -- the AuthSub scope in which the resulting token is valid
+    #   (default: "http://www.google.com/m8/feeds/")
+    # * <tt>:secure</tt> -- boolean indicating whether the token will be secure
+    #   (default: false)
+    # * <tt>:session</tt> -- boolean indicating if the token can be exchanged for a session token
+    #   (default: false)
     def self.authentication_url(target, options = {})
       params = { :next => target,
                  :scope => AuthScope,
@@ -40,6 +63,16 @@ module Contacts
 
     attr_reader :uri
     
+    # User email and token are required here. By default, an AuthSub token from Google is
+    # one-time only, which means you can only make a single request with it.
+    #
+    # ==== Options
+    # * <tt>:limit</tt> -- use a large number to fetch a bigger contact list (default: 200)
+    # * <tt>:offset</tt> -- 0-based value, can be used for pagination
+    # * <tt>:order</tt> -- currently the only value support by Google is "lastmodified"
+    # * <tt>:descending</tt> -- boolean
+    # * <tt>:updated_after</tt> -- string or time-like object, use to only fetch contacts
+    #   that were updated after this date
     def initialize(email, token, options = {})
       @token = token.to_s
       @email = email.to_s
@@ -112,14 +145,18 @@ module Contacts
       @updated_string = @doc.at('/feed/updated').inner_text
     end
 
+    # Timestamp of last update (DateTime). This value is available only after the XML
+    # document has been parsed; for instance after fetching the contact list.
     def updated_at
       @updated_at ||= DateTime.parse @updated_string if @updated_string
     end
 
+    # Timestamp of last update as it appeared in the XML document
     def updated_at_string
       @updated_string
     end
 
+    # Fetches, parses and returns the contact list.
     def contacts
       parse
       all = []
