@@ -1,3 +1,27 @@
-= Google Contacts API
+== Google Contacts API
 
-Documentation
+Fetch user's contact list from your web application without asking him to
+provide his password.
+
+First, make users follow this URL:
+
+  Contacts::Gmail.authentication_url('http://mysite.com/invite')
+
+They will authenticate on Google and it will send them back to the URL provided. Google will add a token GET parameter to the query part of the URL. Use that token in the next step:
+
+  gmail = Contacts::Gmail.new('example@gmail.com', params[:token])
+  contacts = gmail.contacts
+
+== Specdoc
+
+Contacts::Gmail.authentication_url
+- generates a URL for target with default parameters
+- should handle boolean parameters
+
+Contacts::Gmail
+- is ready to query contacts from a specific account
+- fetches contacts feed via HTTP GET
+- handles gzipped response
+- raises a FetchingError when something goes awry
+- parses the resulting feed into name/email pairs
+- makes modification time available after parsing

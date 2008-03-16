@@ -41,5 +41,6 @@
       primary='true'>
       456
     </gd:phoneNumber>
+    <gd:email label="Personal" rel="http://schemas.google.com/g/2005#home" address="fubar@gmail.com" primary="true" />
   </entry>
 </feed>
