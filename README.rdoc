@@ -3,7 +3,8 @@
 Fetch users' contact lists from your web application without asking them to
 provide their passwords.
 
-First, make users follow this URL:
+First, register[http://code.google.com/apis/accounts/docs/RegistrationForWebAppsAuto.html]
+your application's domain. Then make users follow this URL:
 
   Contacts::Gmail.authentication_url('http://mysite.com/invite')
 
@@ -17,9 +18,8 @@ Use that token in the next step:
         ['William Paginate', 'will.paginate@gmail.com'], ...
         ]
 
-This is still alpha. It has been tested only with mocks, not live.
-Feel free to contribute; I plan to support more APIs (Microsoft, etc).
-Read more in Contacts::Gmail.
+Read more in Contacts::Gmail. I plan to support more APIs (Microsoft, etc);
+feel free to contribute.
 
 Author: Mislav Marohnić (mislav.marohnic@gmail.com)
 
