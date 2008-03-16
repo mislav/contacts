@@ -39,8 +39,8 @@ end
 
 desc 'Generate RDoc documentation'
 Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_files.add ['README', 'MIT-LICENSE', 'lib/**/*.rb']
-  rdoc.main = 'README' # page to start on
+  rdoc.rdoc_files.add ['README.rdoc', 'MIT-LICENSE', 'lib/**/*.rb']
+  rdoc.main = 'README.rdoc' # page to start on
   rdoc.title = 'Google Contacts API'
   
   rdoc.rdoc_dir = 'doc'

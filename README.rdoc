@@ -12,6 +12,10 @@ They will authenticate on Google and it will send them back to the URL provided.
   gmail = Contacts::Gmail.new('example@gmail.com', params[:token])
   contacts = gmail.contacts
 
+This is still alpha.
+
+Author: Mislav Marohnić (mislav.marohnic@gmail.com)
+
 == Specdoc
 
 Contacts::Gmail.authentication_url
