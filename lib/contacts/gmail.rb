@@ -142,7 +142,9 @@ module Contacts
 
     def parse
       @doc = Hpricot::XML response_body
-      @updated_string = @doc.at('/feed/updated').inner_text
+      if updated_node = @doc.at('/feed/updated')
+        @updated_string = updated_node.inner_text
+      end
     end
 
     # Timestamp of last update (DateTime). This value is available only after the XML
@@ -163,7 +165,7 @@ module Contacts
       (@doc / '/feed/entry').each do |entry|
         title_node = entry.at('/title')
         email_nodes = entry / 'gd:email[@address]'
-        if title_node or !email_nodes.zero?
+        unless email_nodes.empty?
           person = [title_node ? title_node.inner_text : nil]
           person.concat email_nodes.map {|e| e['address'].to_s }
           all << person

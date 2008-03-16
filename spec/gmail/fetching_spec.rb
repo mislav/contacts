@@ -51,15 +51,26 @@ describe Contacts::Gmail do
 
   it 'parses the resulting feed into name/email pairs' do
     gmail = create
-    gmail.expects(:response_body).returns(sample_xml(:single))
+    gmail.expects(:response_body).returns(sample_xml('google-single'))
 
     gmail.contacts.should == [['Fitzgerald', 'fubar@gmail.com']]
+  end
+
+  it 'parses a complex feed into name/email pairs' do
+    gmail = create
+    gmail.expects(:response_body).returns(sample_xml('google-many'))
+
+    gmail.contacts.should == [
+      ['Elizabeth Bennet', 'liz@gmail.com', 'liz@example.org'],
+      ['William Paginate', 'will_paginate@googlegroups.com'],
+      [nil, 'anonymous@example.com']
+    ]
   end
 
   it 'makes modification time available after parsing' do
     gmail = create
     gmail.updated_at.should be_nil
-    gmail.expects(:response_body).returns(sample_xml(:single))
+    gmail.expects(:response_body).returns(sample_xml('google-single'))
 
     gmail.contacts
     u = gmail.updated_at

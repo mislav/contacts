@@ -1,0 +1,48 @@
+<feed>
+  <entry xmlns='http://www.w3.org/2005/Atom' xmlns:gd='http://schemas.google.com/g/2005'>
+    <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/>
+    <title>Elizabeth Bennet</title>
+    <content>My good friend, Liz.  A little quick to judge sometimes, but nice girl.</content>
+    <gd:email rel='http://schemas.google.com/g/2005#work' primary='true' address='liz@gmail.com'/>
+    <gd:email rel='http://schemas.google.com/g/2005#home' address='liz@example.org'/>
+    <gd:phoneNumber rel='http://schemas.google.com/g/2005#work' primary='true'>
+      (206)555-1212
+    </gd:phoneNumber>
+    <gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>
+      (206)555-1213
+    </gd:phoneNumber>
+    <gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>
+      (206) 555-1212
+    </gd:phoneNumber>
+    <gd:im rel='http://schemas.google.com/g/2005#home' 
+        protocol='http://schemas.google.com/g/2005#GOOGLE_TALK' 
+        address='liz@gmail.com'/>
+    <gd:postalAddress rel='http://schemas.google.com/g/2005#work' primary='true'>
+      1600 Amphitheatre Pkwy 
+      Mountain View, CA 94043
+    </gd:postalAddress>
+    <gd:postalAddress rel='http://schemas.google.com/g/2005#home'>
+      800 Main Street
+      Mountain View, CA 94041
+    </gd:postalAddress>
+    <gd:organization>
+      <gd:orgName>Google, Inc.</gd:orgName>
+      <gd:orgTitle>Tech Writer</gd:orgTitle>
+    </gd:organization>
+  </entry>
+  
+  <entry>
+    <title>Poor Jack</title>
+    <content>Poor Jack doesn't have an e-mail address</content>
+  </entry>
+  
+  <entry>
+    <title>William Paginate</title>
+    <gd:email address='will_paginate@googlegroups.com' />
+  </entry>
+  
+  <entry>
+    <content>This guy doesn't have a name</content>
+    <gd:email address='anonymous@example.com' />
+  </entry>
+</feed>
