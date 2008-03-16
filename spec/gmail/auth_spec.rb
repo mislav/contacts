@@ -1,5 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
-require 'contacts'
+require 'contacts/gmail'
 require 'uri'
 
 describe 'Contacts::Gmail.authentication_url' do
@@ -21,6 +21,12 @@ describe 'Contacts::Gmail.authentication_url' do
     
     pairs.should include('secure=1')
     pairs.should include('session=1')
+  end
+
+  it 'skips parameters that have nil value' do
+    query = url(nil, :secure => nil).query
+    query.should_not include('next')
+    query.should_not include('secure')
   end
 
   def url(*args)

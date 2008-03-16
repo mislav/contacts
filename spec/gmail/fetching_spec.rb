@@ -1,10 +1,10 @@
 require File.dirname(__FILE__) + '/../spec_helper'
-require 'contacts'
+require 'contacts/gmail'
 require 'zlib'
 require 'stringio'
 
 describe Contacts::Gmail do
-  it 'is ready to query contacts from a specific account' do
+  it 'should be set to query contacts from a specific account' do
     create.uri.path.should include('/example%40gmail.com/')
   end
 
