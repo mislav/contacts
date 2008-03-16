@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 require 'contacts/gmail'
 require 'uri'
 
-describe 'Contacts::Gmail.authentication_url' do
+describe Contacts::Gmail, '.authentication_url' do
   it 'generates a URL for target with default parameters' do
     uri = url('http://example.com/invite')
     
