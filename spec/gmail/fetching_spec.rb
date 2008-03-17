@@ -1,5 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
-require 'contacts/gmail'
+require 'contacts/google'
 
 describe Contacts::Google do
 
