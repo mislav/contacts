@@ -4,29 +4,30 @@ require 'net/http'
 require 'net/https'
 require 'rubygems'
 require 'hpricot'
-require 'date'
+require 'time'
 require 'zlib'
 require 'stringio'
 
 module Contacts
+  # == Fetching Google Contacts
   # Web applications should use
   # AuthSub[http://code.google.com/apis/contacts/developers_guide_protocol.html#auth_sub]
   # proxy authentication to get an authentication token for a Google account.
   # 
   # First, get the user to follow the following URL:
   # 
-  #   Contacts::Gmail.authentication_url('http://mysite.com/invite')
+  #   Contacts::Google.authentication_url('http://mysite.com/invite')
   #
   # After he authenticates successfully, Google will redirect him back to the target URL
   # (specified as argument above) and provide the token GET parameter. Use it to create a
   # new instance of this class and request the contact list:
   #
-  #   gmail = Contacts::Gmail.new('example@gmail.com', params[:token])
+  #   gmail = Contacts::Google.new('example@gmail.com', params[:token])
   #   contacts = gmail.contacts
   #   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
   #         ['William Paginate', 'will.paginate@gmail.com'], ...
   #         ]
-  class Gmail
+  class Google
     DOMAIN      = 'www.google.com'
     AuthSubPath = '/accounts/AuthSub' # all variants go over HTTPS
     AuthScope   = "http://#{DOMAIN}/m8/feeds/"
@@ -64,6 +65,11 @@ module Contacts
       "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
     end
 
+    # Makes an HTTPS request to exchange the given token with a session one. Session
+    # tokens never expire, so you can store them in the database alongside user info.
+    #
+    # Returns the new token as string or nil if the parameter couln't be found in response
+    # body.
     def self.session_token(token)
       response = Net::HTTP.start(DOMAIN) do |google|
         google.use_ssl
@@ -73,10 +79,6 @@ module Contacts
 
       pair = response.body.split(/\s+/).detect {|p| p.index('Token') == 0 }
       pair.split('=').last if pair
-    end
-
-    def self.auth_headers(token)
-      { 'Authorization' => %(AuthSub token=#{token.to_s.inspect}) }
     end
 
     # User ID (email) and token are required here. By default, an AuthSub token from
@@ -97,10 +99,10 @@ module Contacts
       response
     end
 
-    # Timestamp of last update (DateTime). This value is available only after the XML
+    # Timestamp of last update. This value is available only after the XML
     # document has been parsed; for instance after fetching the contact list.
     def updated_at
-      @updated_at ||= DateTime.parse @updated_string if @updated_string
+      @updated_at ||= Time.parse @updated_string if @updated_string
     end
 
     # Timestamp of last update as it appeared in the XML document
@@ -132,6 +134,10 @@ module Contacts
           gzipped = StringIO.new(response.body)
           Zlib::GzipReader.new(gzipped).read
         end
+      end
+
+      def self.auth_headers(token)
+        { 'Authorization' => %(AuthSub token=#{token.to_s.inspect}) }
       end
       
       def parse_contacts(body)

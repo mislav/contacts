@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 require 'contacts/gmail'
 
-describe Contacts::Gmail do
+describe Contacts::Google do
 
   before :each do
     @gmail = create
@@ -147,7 +147,7 @@ describe Contacts::Gmail do
   end
 
   def create
-    Contacts::Gmail.new('example@gmail.com', 'dummytoken')
+    Contacts::Google.new('example@gmail.com', 'dummytoken')
   end
 
   def sample_xml(name)

@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 require 'contacts/gmail'
 require 'uri'
 
-describe Contacts::Gmail, '.authentication_url' do
+describe Contacts::Google, '.authentication_url' do
   it 'generates a URL for target with default parameters' do
     uri = url('http://example.com/invite')
     
@@ -39,10 +39,10 @@ describe Contacts::Gmail, '.authentication_url' do
 
     response.expects(:body).returns("Token=G25aZ-v_8B\nExpiration=20061004T123456Z")
 
-    Contacts::Gmail.session_token('dummytoken').should == 'G25aZ-v_8B'
+    Contacts::Google.session_token('dummytoken').should == 'G25aZ-v_8B'
   end
 
   def url(*args)
-    URI.parse Contacts::Gmail.authentication_url(*args)
+    URI.parse Contacts::Google.authentication_url(*args)
   end
 end
