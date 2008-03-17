@@ -1,4 +1,4 @@
-== Google Contacts API
+== Basic usage instructions
 
 Fetch users' contact lists from your web application without asking them to
 provide their passwords.
@@ -6,39 +6,41 @@ provide their passwords.
 First, register[http://code.google.com/apis/accounts/docs/RegistrationForWebAppsAuto.html]
 your application's domain. Then make users follow this URL:
 
-  Contacts::Gmail.authentication_url('http://mysite.com/invite')
+  Contacts::Google.authentication_url('http://mysite.com/invite')
 
 They will authenticate on Google and it will send them back to the URL
 provided. Google will add a token GET parameter to the query part of the URL.
 Use that token in the next step:
 
-  gmail = Contacts::Gmail.new('example@gmail.com', params[:token])
+  gmail = Contacts::Google.new('example@gmail.com', params[:token])
   contacts = gmail.contacts
   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
         ['William Paginate', 'will.paginate@gmail.com'], ...
         ]
 
-Read more in Contacts::Gmail. I plan to support more APIs (Microsoft, etc);
-feel free to contribute.
+Read more in Contacts::Google. I plan to support more APIs (Microsoft Live, for
+starters); feel free to contribute.
 
-Author: Mislav Marohnić (mislav.marohnic@gmail.com)
+Author: <b>Mislav Marohnić</b> (mislav.marohnic@gmail.com)
 
-== Specdoc
+== Documentation auto-generated from specifications
 
-Contacts::Gmail.authentication_url
+Contacts::Google.authentication_url
 - generates a URL for target with default parameters
 - should handle boolean parameters
 - skips parameters that have nil value
+- should be able to exchange one-time for session token
 
-Contacts::Gmail
-- should be set to query contacts from a specific account
+Contacts::Google
 - fetches contacts feed via HTTP GET
+- handles a normal response body
 - handles gzipped response
 - raises a FetchingError when something goes awry
 - parses the resulting feed into name/email pairs
+- parses a complex feed into name/email pairs
 - makes modification time available after parsing
 
-Contacts::Gmail GET query parameter handling
+Contacts::Google GET query parameter handling
 - abstracts ugly parameters behind nicer ones
 - should have implicit :descending with :order
 - should have default :limit of 200

@@ -10,6 +10,7 @@ require 'stringio'
 
 module Contacts
   # == Fetching Google Contacts
+  # 
   # Web applications should use
   # AuthSub[http://code.google.com/apis/contacts/developers_guide_protocol.html#auth_sub]
   # proxy authentication to get an authentication token for a Google account.
@@ -27,6 +28,22 @@ module Contacts
   #   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
   #         ['William Paginate', 'will.paginate@gmail.com'], ...
   #         ]
+  #
+  # == Storing a session token
+  #
+  # The basic token that you will get after the user has authenticated on Google is valid
+  # for only one request. However, you can specify that you want a session token which
+  # doesn't expire:
+  # 
+  #   Contacts::Google.authentication_url('http://mysite.com/invite', :session => true)
+  #
+  # When the user authenticates, he will be redirected back with a token which still isn't
+  # a session token, but can be exchanged for one!
+  #
+  #   token = Contacts::Google.sesion_token(params[:token])
+  #
+  # Now you have a permanent token. Store it with other user data so you can query the API
+  # on his behalf without him having to authenticate on Google each time.
   class Google
     DOMAIN      = 'www.google.com'
     AuthSubPath = '/accounts/AuthSub' # all variants go over HTTPS
@@ -89,7 +106,7 @@ module Contacts
       @base_path = "/m8/feeds/contacts/#{CGI.escape(@user)}/base"
     end
 
-    def get(params)
+    def get(params) #:nodoc:
       response = Net::HTTP.start(DOMAIN) do |google|
         google.get(@base_path + '?' + query_string(params), @headers)
       end
