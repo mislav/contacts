@@ -29,6 +29,19 @@ describe Contacts::Gmail, '.authentication_url' do
     query.should_not include('secure')
   end
 
+  it 'should be able to exchange one-time for session token' do
+    connection = mock('HTTP connection')
+    response = mock('HTTP response')
+    Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
+    connection.expects(:use_ssl)
+    connection.expects(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
+    connection.expects(:get).with('/accounts/AuthSubSessionToken', 'Authorization' => %(AuthSub token="dummytoken"))
+
+    response.expects(:body).returns("Token=G25aZ-v_8B\nExpiration=20061004T123456Z")
+
+    Contacts::Gmail.session_token('dummytoken').should == 'G25aZ-v_8B'
+  end
+
   def url(*args)
     URI.parse Contacts::Gmail.authentication_url(*args)
   end

@@ -1,9 +1,12 @@
 require 'contacts'
 require 'cgi'
 require 'net/http'
+require 'net/https'
 require 'rubygems'
 require 'hpricot'
 require 'date'
+require 'zlib'
+require 'stringio'
 
 module Contacts
   # Web applications should use
@@ -24,9 +27,9 @@ module Contacts
   #         ['William Paginate', 'will.paginate@gmail.com'], ...
   #         ]
   class Gmail
-    DOMAIN     = 'www.google.com'
-    AuthSubURL = "https://#{DOMAIN}/accounts/AuthSubRequest"
-    AuthScope  = "http://#{DOMAIN}/m8/feeds/"
+    DOMAIN      = 'www.google.com'
+    AuthSubPath = '/accounts/AuthSub' # all variants go over HTTPS
+    AuthScope   = "http://#{DOMAIN}/m8/feeds/"
 
     # URL to Google site where user authenticates. Afterwards, Google redirects to your
     # site with the URL specified as +target+.
@@ -58,93 +61,40 @@ module Contacts
         url
       end.join('&')
 
-      AuthSubURL + '?' + query
+      "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
     end
 
-    attr_reader :uri
-    
-    # User email and token are required here. By default, an AuthSub token from Google is
-    # one-time only, which means you can only make a single request with it.
-    #
-    # ==== Options
-    # * <tt>:limit</tt> -- use a large number to fetch a bigger contact list (default: 200)
-    # * <tt>:offset</tt> -- 0-based value, can be used for pagination
-    # * <tt>:order</tt> -- currently the only value support by Google is "lastmodified"
-    # * <tt>:descending</tt> -- boolean
-    # * <tt>:updated_after</tt> -- string or time-like object, use to only fetch contacts
-    #   that were updated after this date
-    def initialize(email, token, options = {})
-      @token = token.to_s
-      @email = email.to_s
-      @headers = {
-        'Authorization' => %(AuthSub token="#{@token}"),
-        'Accept-Encoding' => 'gzip'
-      }
-      @uri = URI.parse AuthScope + "contacts/#{CGI.escape(@email)}/base"
-      
-      @params = { :limit => 200 }.merge(options)
-    end
-
-    def query_string
-      @params.inject [] do |url, pair|
-        value = pair.last
-        unless value.nil?
-          # max-results / start-index / updated-min / orderby lastmodified / sortorder
-          key = case pair.first
-            when :limit
-              'max-results'
-            when :offset
-              value = value.to_i + 1
-              'start-index'
-            when :order
-              url << 'sortorder=descending' if @params[:descending].nil?
-              'orderby'
-            when :descending
-              value = value ? 'descending' : 'ascending'
-              'sortorder'
-            when :updated_after
-              value = value.strftime("%Y-%m-%dT%H:%M:%S%Z") if value.respond_to? :strftime
-              'updated-min'
-            else pair.first
-            end
-          
-          url << "#{key}=#{CGI.escape(value.to_s)}"
-        end
-        url
-      end.join('&')
-    end
-
-    def get
-      response = Net::HTTP.start(uri.host) do |google|
-        google.get(uri.path + '?' + query_string, @headers)
+    def self.session_token(token)
+      response = Net::HTTP.start(DOMAIN) do |google|
+        google.use_ssl
+        google.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        google.get(AuthSubPath + 'SessionToken', auth_headers(token))
       end
 
-      unless response.is_a? Net::HTTPSuccess
-        raise FetchingError.new(response)
+      pair = response.body.split(/\s+/).detect {|p| p.index('Token') == 0 }
+      pair.split('=').last if pair
+    end
+
+    def self.auth_headers(token)
+      { 'Authorization' => %(AuthSub token=#{token.to_s.inspect}) }
+    end
+
+    # User ID (email) and token are required here. By default, an AuthSub token from
+    # Google is one-time only, which means you can only make a single request with it.
+    def initialize(user_id, token)
+      @user = user_id.to_s
+      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.auth_headers(token))
+      @base_path = "/m8/feeds/contacts/#{CGI.escape(@user)}/base"
+    end
+
+    def get(params)
+      response = Net::HTTP.start(DOMAIN) do |google|
+        google.get(@base_path + '?' + query_string(params), @headers)
       end
+
+      raise FetchingError.new(response) unless response.is_a? Net::HTTPSuccess
 
       response
-    end
-
-    def response_body
-      @response = get unless @response
-      
-      unless @response['Content-Encoding'] == 'gzip'
-        @response.body
-      else
-        require 'zlib'
-        require 'stringio'
-
-        gzipped = StringIO.new(@response.body)
-        Zlib::GzipReader.new(gzipped).read
-      end
-    end
-
-    def parse
-      @doc = Hpricot::XML response_body
-      if updated_node = @doc.at('/feed/updated')
-        @updated_string = updated_node.inner_text
-      end
     end
 
     # Timestamp of last update (DateTime). This value is available only after the XML
@@ -159,19 +109,82 @@ module Contacts
     end
 
     # Fetches, parses and returns the contact list.
-    def contacts
-      parse
-      all = []
-      (@doc / '/feed/entry').each do |entry|
-        title_node = entry.at('/title')
-        email_nodes = entry / 'gd:email[@address]'
-        unless email_nodes.empty?
-          person = [title_node ? title_node.inner_text : nil]
-          person.concat email_nodes.map {|e| e['address'].to_s }
-          all << person
+    #
+    # ==== Options
+    # * <tt>:limit</tt> -- use a large number to fetch a bigger contact list (default: 200)
+    # * <tt>:offset</tt> -- 0-based value, can be used for pagination
+    # * <tt>:order</tt> -- currently the only value support by Google is "lastmodified"
+    # * <tt>:descending</tt> -- boolean
+    # * <tt>:updated_after</tt> -- string or time-like object, use to only fetch contacts
+    #   that were updated after this date
+    def contacts(options = {})
+      params = { :limit => 200 }.update(options)
+      response = get(params)
+      parse_contacts response_body(response)
+    end
+
+    protected
+      
+      def response_body(response)
+        unless response['Content-Encoding'] == 'gzip'
+          response.body
+        else
+          gzipped = StringIO.new(response.body)
+          Zlib::GzipReader.new(gzipped).read
         end
       end
-      all
-    end
+      
+      def parse_contacts(body)
+        doc = Hpricot::XML body
+        entries = []
+        
+        if updated_node = doc.at('/feed/updated')
+          @updated_string = updated_node.inner_text
+        end
+        
+        (doc / '/feed/entry').each do |entry|
+          email_nodes = entry / 'gd:email[@address]'
+          
+          unless email_nodes.empty?
+            title_node = entry.at('/title')
+            name = title_node ? title_node.inner_text : nil
+            
+            person = email_nodes.inject [name] do |p, e|
+              p << e['address'].to_s
+            end
+            entries << person
+          end
+        end
+
+        entries
+      end
+
+      def query_string(params)
+        params.inject [] do |url, pair|
+          value = pair.last
+          unless value.nil?
+            key = case pair.first
+              when :limit
+                'max-results'
+              when :offset
+                value = value.to_i + 1
+                'start-index'
+              when :order
+                url << 'sortorder=descending' if params[:descending].nil?
+                'orderby'
+              when :descending
+                value = value ? 'descending' : 'ascending'
+                'sortorder'
+              when :updated_after
+                value = value.strftime("%Y-%m-%dT%H:%M:%S%Z") if value.respond_to? :strftime
+                'updated-min'
+              else pair.first
+              end
+            
+            url << "#{key}=#{CGI.escape(value.to_s)}"
+          end
+          url
+        end.join('&')
+      end
   end
 end
