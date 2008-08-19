@@ -47,21 +47,21 @@ module Contacts
   class Google
     DOMAIN      = 'www.google.com'
     AuthSubPath = '/accounts/AuthSub' # all variants go over HTTPS
-    AuthScope   = "http://#{DOMAIN}/m8/feeds/"
+    FeedsPath   = '/m8/feeds/contacts/'
 
     # URL to Google site where user authenticates. Afterwards, Google redirects to your
     # site with the URL specified as +target+.
     #
     # Options are:
     # * <tt>:scope</tt> -- the AuthSub scope in which the resulting token is valid
-    #   (default: "http://www.google.com/m8/feeds/")
+    #   (default: "http://www.google.com/m8/feeds/contacts/")
     # * <tt>:secure</tt> -- boolean indicating whether the token will be secure
     #   (default: false)
     # * <tt>:session</tt> -- boolean indicating if the token can be exchanged for a session token
     #   (default: false)
     def self.authentication_url(target, options = {})
       params = { :next => target,
-                 :scope => AuthScope,
+                 :scope => "http://#{DOMAIN}#{FeedsPath}",
                  :secure => false,
                  :session => false
                }.merge(options)
@@ -85,7 +85,7 @@ module Contacts
     # Makes an HTTPS request to exchange the given token with a session one. Session
     # tokens never expire, so you can store them in the database alongside user info.
     #
-    # Returns the new token as string or nil if the parameter couln't be found in response
+    # Returns the new token as string or nil if the parameter couldn't be found in response
     # body.
     def self.session_token(token)
       response = Net::HTTP.start(DOMAIN) do |google|
@@ -97,22 +97,26 @@ module Contacts
       pair = response.body.split(/\s+/).detect {|p| p.index('Token') == 0 }
       pair.split('=').last if pair
     end
+    
+    attr_reader :user, :token, :headers
+    attr_accessor :projection
 
-    # User ID (email) and token are required here. By default, an AuthSub token from
+    # A token is required here. By default, an AuthSub token from
     # Google is one-time only, which means you can only make a single request with it.
-    def initialize(user_id, token)
-      @user = user_id.to_s
-      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.auth_headers(token))
-      @base_path = "/m8/feeds/contacts/#{CGI.escape(@user)}/base"
+    def initialize(token, user_id = 'default')
+      @user    = user_id.to_s
+      @token   = token.to_s
+      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.auth_headers(@token))
+      @projection = 'thin'
     end
 
-    def get(params) #:nodoc:
+    def get(params) #: nodoc:
       response = Net::HTTP.start(DOMAIN) do |google|
-        google.get(@base_path + '?' + query_string(params), @headers)
+        path = FeedsPath + CGI.escape(@user)
+        google.get("#{path}/#{@projection}?#{query_string(params)}", @headers)
       end
 
       raise FetchingError.new(response) unless response.is_a? Net::HTTPSuccess
-
       response
     end
 
@@ -151,10 +155,6 @@ module Contacts
           gzipped = StringIO.new(response.body)
           Zlib::GzipReader.new(gzipped).read
         end
-      end
-
-      def self.auth_headers(token)
-        { 'Authorization' => %(AuthSub token=#{token.to_s.inspect}) }
       end
       
       def parse_contacts(body)
@@ -208,6 +208,10 @@ module Contacts
           end
           url
         end.join('&')
+      end
+      
+      def self.auth_headers(token)
+        { 'Authorization' => %(AuthSub token="#{token}") }
       end
   end
 end

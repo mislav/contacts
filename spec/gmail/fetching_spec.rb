@@ -7,18 +7,37 @@ describe Contacts::Google do
     @gmail = create
   end
 
-  it 'fetches contacts feed via HTTP GET' do
-    @gmail.expects(:query_string).returns('a=b')
-    connection = mock('HTTP connection')
-    response = mock('HTTP response')
-    response.stubs(:is_a?).with(Net::HTTPSuccess).returns(true)
-    Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
-    connection.expects(:get).with('/m8/feeds/contacts/example%40gmail.com/base?a=b', {
-        'Authorization' => %(AuthSub token="dummytoken"),
-        'Accept-Encoding' => 'gzip'
-      })
+  describe 'fetches contacts feed via HTTP GET' do
+    it 'with defaults' do
+      @gmail.expects(:query_string).returns('a=b')
+      connection = mock('HTTP connection')
+      response = mock_response
+      Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
+      connection.expects(:get).with('/m8/feeds/contacts/default/thin?a=b', {
+          'Authorization' => %(AuthSub token="dummytoken"),
+          'Accept-Encoding' => 'gzip'
+        })
 
-    @gmail.get({})
+      @gmail.get({})
+    end
+    
+    it 'with explicit user ID and full projection' do
+      @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
+      @gmail.projection = 'full'
+      @gmail.expects(:query_string).returns('')
+      connection = mock('HTTP connection')
+      response = mock_response
+      Net::HTTP.expects(:start).yields(connection).returns(response)
+      connection.expects(:get).with('/m8/feeds/contacts/person%40example.com/full?', anything)
+
+      @gmail.get({})
+    end
+    
+    def mock_response(success = true)
+      response = mock('HTTP response')
+      response.stubs(:is_a?).with(Net::HTTPSuccess).returns(success)
+      response
+    end
   end
 
   it 'handles a normal response body' do
@@ -147,7 +166,7 @@ describe Contacts::Google do
   end
 
   def create
-    Contacts::Google.new('example@gmail.com', 'dummytoken')
+    Contacts::Google.new('dummytoken')
   end
 
   def sample_xml(name)

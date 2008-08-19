@@ -10,7 +10,7 @@ describe Contacts::Google, '.authentication_url' do
     uri.scheme.should == 'https'
     uri.query.split('&').sort.should == [
       'next=http%3A%2F%2Fexample.com%2Finvite',
-      'scope=http%3A%2F%2Fwww.google.com%2Fm8%2Ffeeds%2F',
+      'scope=http%3A%2F%2Fwww.google.com%2Fm8%2Ffeeds%2Fcontacts%2F',
       'secure=0',
       'session=0'
       ]
