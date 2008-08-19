@@ -1,0 +1,2 @@
+--exclude ^\/,^spec\/
+--no-validator-links

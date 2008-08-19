@@ -13,15 +13,16 @@ Spec::Rake::SpecTask.new(:spec) do |t|
 end
 
 namespace :spec do
-  desc 'Run all specs in spec directory with RCov'
+  desc 'Analyze spec coverage with RCov'
   Spec::Rake::SpecTask.new(:rcov) do |t|
-    t.spec_opts = ['--options', spec_opts]
     t.spec_files = spec_glob
+    t.spec_opts = ['--options', spec_opts]
     t.rcov = true
-    # t.rcov_opts = lambda do
-    #   IO.readlines('spec/rcov.opts').map {|l| l.chomp.split " "}.flatten
-    # end
+    t.rcov_opts = lambda do
+      IO.readlines('spec/rcov.opts').map { |l| l.chomp.split(" ") }.flatten
+    end
   end
+  
   
   desc 'Print Specdoc for all specs'
   Spec::Rake::SpecTask.new(:doc) do |t|
