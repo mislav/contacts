@@ -168,8 +168,4 @@ describe Contacts::Google do
   def create
     Contacts::Google.new('dummytoken')
   end
-
-  def sample_xml(name)
-    File.read File.dirname(__FILE__) + "/../feeds/#{name}.xml"
-  end
 end
