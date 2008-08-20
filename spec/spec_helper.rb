@@ -1,6 +1,9 @@
 require 'rubygems'
+require 'cgi'
 gem 'rspec', '~> 1.1.3'
 require 'spec'
+gem 'mocha', '~> 0.9.0'
+require 'mocha'
 
 # add library's lib directory
 $:.unshift File.dirname(__FILE__) + '/../lib'
@@ -18,4 +21,40 @@ Spec::Runner.configure do |config|
   # config.predicate_matchers[:swim] = :can_swim?
   
   config.mock_with :mocha
+end
+
+module Mocha
+  module ParameterMatchers
+    def query_string(entries, partial = false)
+      QueryStringMatcher.new(entries, partial)
+    end
+  end
+end
+
+class QueryStringMatcher < Mocha::ParameterMatchers::Base
+  
+  def initialize(entries, partial)
+    @entries = entries
+    @partial = partial
+  end
+  
+  def matches?(available_parameters)
+    string = available_parameters.shift.split('?').last
+    broken = string.split('&').map { |pair| pair.split('=').map { |value| CGI.unescape(value) } }
+    hash = Hash[*broken.flatten]
+    
+    if @partial
+      has_entry_matchers = @entries.map do |key, value|
+        Mocha::ParameterMatchers::HasEntry.new(key, value)
+      end
+      Mocha::ParameterMatchers::AllOf.new(*has_entry_matchers).matches?([hash])
+    else
+      @entries == hash
+    end
+  end
+  
+  def mocha_inspect
+    "query_string(#{@entries.mocha_inspect})"
+  end
+  
 end

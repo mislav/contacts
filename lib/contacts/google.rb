@@ -47,7 +47,26 @@ module Contacts
   class Google
     DOMAIN      = 'www.google.com'
     AuthSubPath = '/accounts/AuthSub' # all variants go over HTTPS
+    ClientLogin = '/accounts/ClientLogin'
     FeedsPath   = '/m8/feeds/contacts/'
+    
+    # default options for #authentication_url
+    def self.authentication_url_options
+      @authentication_url_options ||= {
+        :scope => "http://#{DOMAIN}#{FeedsPath}",
+        :secure => false,
+        :session => false
+      }
+    end
+    
+    # default options for #client_login
+    def self.client_login_options
+      @client_login_options ||= {
+        :accountType => 'GOOGLE',
+        :service => 'cp',
+        :source => 'Contacts-Ruby'
+      }
+    end
 
     # URL to Google site where user authenticates. Afterwards, Google redirects to your
     # site with the URL specified as +target+.
@@ -60,26 +79,27 @@ module Contacts
     # * <tt>:session</tt> -- boolean indicating if the token can be exchanged for a session token
     #   (default: false)
     def self.authentication_url(target, options = {})
-      params = { :next => target,
-                 :scope => "http://#{DOMAIN}#{FeedsPath}",
-                 :secure => false,
-                 :session => false
-               }.merge(options)
-               
-      query = params.inject [] do |url, pair|
-        unless pair.last.nil?
-          value = case pair.last
-            when TrueClass; 1
-            when FalseClass; 0
-            else pair.last
+      params = authentication_url_options.merge(options)
+      params[:next] = target
+      query = query_string(params)
+      "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
+    end
+    
+    # Constructs a query string from a Hash object
+    def self.query_string(params)
+      params.inject([]) do |all, pair|
+        key, value = pair
+        unless value.nil?
+          value = case value
+            when TrueClass;  '1'
+            when FalseClass; '0'
+            else value
             end
           
-          url << "#{pair.first}=#{CGI.escape(value.to_s)}"
+          all << "#{CGI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
         end
-        url
+        all
       end.join('&')
-
-      "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
     end
 
     # Makes an HTTPS request to exchange the given token with a session one. Session
@@ -94,7 +114,20 @@ module Contacts
         google.get(AuthSubPath + 'SessionToken', auth_headers(token))
       end
 
-      pair = response.body.split(/\s+/).detect {|p| p.index('Token') == 0 }
+      pair = response.body.split(/\n/).detect { |p| p.index('Token=') == 0 }
+      pair.split('=').last if pair
+    end
+    
+    # Alternative to AuthSub: using email and password.
+    def self.client_login(email, password)
+      response = Net::HTTP.start(DOMAIN) do |google|
+        google.use_ssl
+        google.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        query = query_string(client_login_options.merge(:Email => email, :Passwd => password))
+        google.post(ClientLogin, query)
+      end
+
+      pair = response.body.split(/\n/).detect { |p| p.index('Auth=') == 0 }
       pair.split('=').last if pair
     end
     
@@ -110,10 +143,12 @@ module Contacts
       @projection = 'thin'
     end
 
-    def get(params) #: nodoc:
+    def get(params) # :nodoc:
       response = Net::HTTP.start(DOMAIN) do |google|
         path = FeedsPath + CGI.escape(@user)
-        google.get("#{path}/#{@projection}?#{query_string(params)}", @headers)
+        google_params = translate_parameters(params)
+        query = self.class.query_string(google_params)
+        google.get("#{path}/#{@projection}?#{query}", @headers)
       end
 
       raise FetchingError.new(response) unless response.is_a? Net::HTTPSuccess
@@ -182,18 +217,18 @@ module Contacts
         entries
       end
 
-      def query_string(params)
-        params.inject [] do |url, pair|
-          value = pair.last
+      def translate_parameters(params)
+        params.inject({}) do |all, pair|
+          key, value = pair
           unless value.nil?
-            key = case pair.first
+            key = case key
               when :limit
                 'max-results'
               when :offset
                 value = value.to_i + 1
                 'start-index'
               when :order
-                url << 'sortorder=descending' if params[:descending].nil?
+                all['sortorder'] = 'descending' if params[:descending].nil?
                 'orderby'
               when :descending
                 value = value ? 'descending' : 'ascending'
@@ -201,13 +236,13 @@ module Contacts
               when :updated_after
                 value = value.strftime("%Y-%m-%dT%H:%M:%S%Z") if value.respond_to? :strftime
                 'updated-min'
-              else pair.first
+              else key
               end
             
-            url << "#{key}=#{CGI.escape(value.to_s)}"
+            all[key] = value
           end
-          url
-        end.join('&')
+          all
+        end
       end
       
       def self.auth_headers(token)

@@ -9,22 +9,20 @@ describe Contacts::Google do
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      @gmail.expects(:query_string).returns('a=b')
       connection = mock('HTTP connection')
       response = mock_response
       Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
-      connection.expects(:get).with('/m8/feeds/contacts/default/thin?a=b', {
+      connection.expects(:get).with('/m8/feeds/contacts/default/thin?foo=bar', {
           'Authorization' => %(AuthSub token="dummytoken"),
           'Accept-Encoding' => 'gzip'
         })
 
-      @gmail.get({})
+      @gmail.get(:foo => 'bar')
     end
     
     it 'with explicit user ID and full projection' do
       @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
       @gmail.projection = 'full'
-      @gmail.expects(:query_string).returns('')
       connection = mock('HTTP connection')
       response = mock_response
       Net::HTTP.expects(:start).yields(connection).returns(response)
@@ -120,11 +118,11 @@ describe Contacts::Google do
     end
     
     it 'abstracts ugly parameters behind nicer ones' do
-      expect_params %w( max-results=25
-                        orderby=lastmodified
-                        sortorder=ascending
-                        start-index=11
-                        updated-min=datetime )
+      expect_params 'max-results' => '25',
+                    'orderby' => 'lastmodified',
+                    'sortorder' => 'ascending',
+                    'start-index' => '11',
+                    'updated-min' => 'datetime'
 
       @gmail.contacts :limit => 25,
         :offset => 10,
@@ -134,33 +132,22 @@ describe Contacts::Google do
     end
 
     it 'should have implicit :descending with :order' do
-      expect_params %w( orderby=lastmodified
-                        sortorder=descending ), true
-                        
+      expect_params({ 'orderby' => 'lastmodified', 'sortorder' => 'descending' }, true)
       @gmail.contacts :order => 'lastmodified'
     end
 
     it 'should have default :limit of 200' do
-      expect_params %w( max-results=200 )
+      expect_params 'max-results' => '200'
       @gmail.contacts
     end
 
     it 'should skip nil values in parameters' do
-      expect_params %w( start-index=1 )
+      expect_params 'start-index' => '1'
       @gmail.contacts :limit => nil, :offset => 0
     end
 
-    def expect_params(params, some = false)
-      @connection.expects(:get).with() do |path, headers|
-        pairs = path.split('?').last.split('&').sort
-        unless some
-          pairs.should == params
-          pairs.size == params.size
-        else
-          params.each {|p| pairs.should include(p) }
-          pairs.size >= params.size
-        end
-      end
+    def expect_params(params, partial = false)
+      @connection.expects(:get).with(query_string(params, partial), instance_of(Hash))
     end
     
   end
