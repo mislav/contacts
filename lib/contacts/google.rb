@@ -84,23 +84,6 @@ module Contacts
       query = query_string(params)
       "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
     end
-    
-    # Constructs a query string from a Hash object
-    def self.query_string(params)
-      params.inject([]) do |all, pair|
-        key, value = pair
-        unless value.nil?
-          value = case value
-            when TrueClass;  '1'
-            when FalseClass; '0'
-            else value
-            end
-          
-          all << "#{CGI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
-        end
-        all
-      end.join('&')
-    end
 
     # Makes an HTTPS request to exchange the given token with a session one. Session
     # tokens never expire, so you can store them in the database alongside user info.
@@ -111,7 +94,7 @@ module Contacts
       response = Net::HTTP.start(DOMAIN) do |google|
         google.use_ssl
         google.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        google.get(AuthSubPath + 'SessionToken', auth_headers(token))
+        google.get(AuthSubPath + 'SessionToken', authorization_header(token))
       end
 
       pair = response.body.split(/\n/).detect { |p| p.index('Token=') == 0 }
@@ -139,7 +122,7 @@ module Contacts
     def initialize(token, user_id = 'default')
       @user    = user_id.to_s
       @token   = token.to_s
-      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.auth_headers(@token))
+      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.authorization_header(@token))
       @projection = 'thin'
     end
 
@@ -216,6 +199,23 @@ module Contacts
 
         entries
       end
+      
+      # Constructs a query string from a Hash object
+      def self.query_string(params)
+        params.inject([]) do |all, pair|
+          key, value = pair
+          unless value.nil?
+            value = case value
+              when TrueClass;  '1'
+              when FalseClass; '0'
+              else value
+              end
+
+            all << "#{CGI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
+          end
+          all
+        end.join('&')
+      end
 
       def translate_parameters(params)
         params.inject({}) do |all, pair|
@@ -245,8 +245,9 @@ module Contacts
         end
       end
       
-      def self.auth_headers(token)
-        { 'Authorization' => %(AuthSub token="#{token}") }
+      def self.authorization_header(token, client = false)
+        type = client ? 'GoogleLogin auth' : 'AuthSub token'
+        { 'Authorization' => %(#{type}="#{token}") }
       end
   end
 end
