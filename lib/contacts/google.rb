@@ -91,9 +91,7 @@ module Contacts
     # Returns the new token as string or nil if the parameter couldn't be found in response
     # body.
     def self.session_token(token)
-      response = Net::HTTP.start(DOMAIN) do |google|
-        google.use_ssl
-        google.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      response = http_start do |google|
         google.get(AuthSubPath + 'SessionToken', authorization_header(token))
       end
 
@@ -103,15 +101,39 @@ module Contacts
     
     # Alternative to AuthSub: using email and password.
     def self.client_login(email, password)
-      response = Net::HTTP.start(DOMAIN) do |google|
-        google.use_ssl
-        google.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      response = http_start do |google|
         query = query_string(client_login_options.merge(:Email => email, :Passwd => password))
         google.post(ClientLogin, query)
       end
 
       pair = response.body.split(/\n/).detect { |p| p.index('Auth=') == 0 }
       pair.split('=').last if pair
+    end
+    
+    def self.http_start(ssl = true)
+      http = Net::HTTP.start(DOMAIN)
+      if ssl
+        http.use_ssl
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+      begin
+        response = yield(http)
+      
+        loop do
+          case response
+          when Net::HTTPSuccess
+            break response
+          when Net::HTTPRedirection
+            location = URI.parse response['Location']
+            puts "Redirected to #{location}"
+            response = http.get(location.path)
+          else
+            response.error!
+          end
+        end
+      ensure
+        http.finish
+      end
     end
     
     attr_reader :user, :token, :headers

@@ -16,8 +16,31 @@ module SampleFeeds
   end
 end
 
+module HttpMocks
+  def mock_response(type = :success)
+    klass = case type
+    when :success  then Net::HTTPSuccess
+    when :redirect then Net::HTTPRedirection
+    when :fail     then Net::HTTPClientError
+    else type
+    end
+    
+    klass.new(nil, nil, nil)
+  end
+  
+  def mock_connection(ssl = true)
+    connection = mock('HTTP connection')
+    connection.expects(:finish)
+    if ssl
+      connection.expects(:use_ssl)
+      connection.expects(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
+    end
+    connection
+  end
+end
+
 Spec::Runner.configure do |config|
-  config.include SampleFeeds
+  config.include SampleFeeds, HttpMocks
   # config.predicate_matchers[:swim] = :can_swim?
   
   config.mock_with :mocha

@@ -30,12 +30,6 @@ describe Contacts::Google do
 
       @gmail.get({})
     end
-    
-    def mock_response(success = true)
-      response = mock('HTTP response')
-      response.stubs(:is_a?).with(Net::HTTPSuccess).returns(success)
-      response
-    end
   end
 
   it 'handles a normal response body' do
