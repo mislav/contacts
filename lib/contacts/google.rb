@@ -167,7 +167,7 @@ module Contacts
       
       def parse_contacts(body)
         doc = Hpricot::XML body
-        entries = []
+        contacts_found = []
         
         if updated_node = doc.at('/feed/updated')
           @updated_string = updated_node.inner_text
@@ -179,15 +179,13 @@ module Contacts
           unless email_nodes.empty?
             title_node = entry.at('/title')
             name = title_node ? title_node.inner_text : nil
-            
-            person = email_nodes.inject [name] do |p, e|
-              p << e['address'].to_s
-            end
-            entries << person
+            contact = Contact.new(nil, name)
+            contact.emails.concat email_nodes.map { |e| e['address'].to_s }
+            contacts_found << contact
           end
         end
 
-        entries
+        contacts_found
       end
       
       # Constructs a query string from a Hash object

@@ -5,9 +5,6 @@ require 'spec'
 gem 'mocha', '~> 0.9.0'
 require 'mocha'
 
-# add library's lib directory
-$:.unshift File.dirname(__FILE__) + '/../lib'
-
 module SampleFeeds
   FEED_DIR = File.dirname(__FILE__) + '/feeds/'
   

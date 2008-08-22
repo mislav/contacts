@@ -1,4 +1,23 @@
 module Contacts
+  class Contact
+    attr_reader :name, :username, :emails
+    
+    def initialize(email, name = nil, username = nil)
+      @emails = []
+      @emails << email if email
+      @name = name
+      @username = username
+    end
+    
+    def email
+      @emails.first
+    end
+    
+    def inspect
+      %!#<Contacts::Contact "#{name}" (#{email})>!
+    end
+  end
+  
   def self.verbose?
     'irb' == $0
   end
@@ -16,9 +35,5 @@ module Contacts
       @location = @response['Location']
       super "exceeded maximum of #{MAX_REDIRECTS} redirects (Location: #{location})"
     end
-  end
-  
-  class FetchingError < RuntimeError
-    
   end
 end

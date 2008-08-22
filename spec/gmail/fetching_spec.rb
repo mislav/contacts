@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+require 'spec_helper'
 require 'contacts/google'
 
 describe Contacts::Google do
@@ -78,18 +78,25 @@ describe Contacts::Google do
     @gmail.stubs(:get)
     @gmail.expects(:response_body).returns(sample_xml('google-single'))
 
-    @gmail.contacts.should == [['Fitzgerald', 'fubar@gmail.com']]
+    found = @gmail.contacts
+    found.size.should == 1
+    contact = found.first
+    contact.name.should == 'Fitzgerald'
+    contact.emails.should == ['fubar@gmail.com']
   end
 
   it 'parses a complex feed into name/email pairs' do
     @gmail.stubs(:get)
     @gmail.expects(:response_body).returns(sample_xml('google-many'))
 
-    @gmail.contacts.should == [
-      ['Elizabeth Bennet', 'liz@gmail.com', 'liz@example.org'],
-      ['William Paginate', 'will_paginate@googlegroups.com'],
-      [nil, 'anonymous@example.com']
-    ]
+    found = @gmail.contacts
+    found.size.should == 3
+    found[0].name.should == 'Elizabeth Bennet'
+    found[0].emails.should == ['liz@gmail.com', 'liz@example.org']
+    found[1].name.should == 'William Paginate'
+    found[1].emails.should == ['will_paginate@googlegroups.com']
+    found[2].name.should be_nil
+    found[2].emails.should == ['anonymous@example.com']
   end
 
   it 'makes modification time available after parsing' do
