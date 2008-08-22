@@ -112,10 +112,10 @@ module Contacts
 
     # A token is required here. By default, an AuthSub token from
     # Google is one-time only, which means you can only make a single request with it.
-    def initialize(token, user_id = 'default')
+    def initialize(token, user_id = 'default', client = false)
       @user    = user_id.to_s
       @token   = token.to_s
-      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.authorization_header(@token))
+      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.authorization_header(@token, client))
       @projection = 'thin'
     end
 

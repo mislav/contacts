@@ -52,6 +52,11 @@ describe Contacts::Google, '.authentication_url' do
 
     Contacts::Google.client_login('mislav@example.com', 'dummyPassword').should == 'EuoqMSjN5uo-3B'
   end
+  
+  it "should support token authentication after client login" do
+    @gmail = Contacts::Google.new('dummytoken', 'default', true)
+    @gmail.headers['Authorization'].should == 'GoogleLogin auth="dummytoken"'
+  end
 
   def parse_authentication_url(*args)
     URI.parse Contacts::Google.authentication_url(*args)
