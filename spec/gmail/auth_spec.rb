@@ -32,7 +32,8 @@ describe Contacts::Google, '.authentication_url' do
   it 'should be able to exchange one-time for session token' do
     connection = mock_connection
     response = mock_response
-    Net::HTTP.expects(:start).with('www.google.com').returns(connection)
+    Net::HTTP.expects(:new).with('www.google.com', 443).returns(connection)
+    connection.expects(:start)
     connection.expects(:get).with('/accounts/AuthSubSessionToken', 'Authorization' => %(AuthSub token="dummytoken")).returns(response)
     response.expects(:body).returns("Token=G25aZ-v_8B\nExpiration=20061004T123456Z")
 
@@ -42,7 +43,8 @@ describe Contacts::Google, '.authentication_url' do
   it "should support client login" do
     connection = mock_connection
     response = mock_response
-    Net::HTTP.expects(:start).with('www.google.com').returns(connection)
+    Net::HTTP.expects(:new).with('www.google.com', 443).returns(connection)
+    connection.expects(:start)
     connection.expects(:post).with('/accounts/ClientLogin', query_string('accountType' => 'GOOGLE',
       'service' => 'cp', 'source' => 'Contacts-Ruby',
       'Email' => 'mislav@example.com', 'Passwd' => 'dummyPassword')).returns(response)

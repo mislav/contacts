@@ -9,13 +9,14 @@ describe Contacts::Google do
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      connection = mock('HTTP connection')
+      connection = mock_connection(false)
       response = mock_response
-      Net::HTTP.expects(:start).with('www.google.com').yields(connection).returns(response)
+      Net::HTTP.expects(:new).with('www.google.com', 80).returns(connection)
+      connection.expects(:start)
       connection.expects(:get).with('/m8/feeds/contacts/default/thin?foo=bar', {
           'Authorization' => %(AuthSub token="dummytoken"),
           'Accept-Encoding' => 'gzip'
-        })
+        }).returns(response)
 
       @gmail.get(:foo => 'bar')
     end
@@ -23,10 +24,11 @@ describe Contacts::Google do
     it 'with explicit user ID and full projection' do
       @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
       @gmail.projection = 'full'
-      connection = mock('HTTP connection')
+      connection = mock_connection(false)
       response = mock_response
-      Net::HTTP.expects(:start).yields(connection).returns(response)
-      connection.expects(:get).with('/m8/feeds/contacts/person%40example.com/full?', anything)
+      Net::HTTP.expects(:new).returns(connection)
+      connection.expects(:start)
+      connection.expects(:get).with('/m8/feeds/contacts/person%40example.com/full?', anything).returns(response)
 
       @gmail.get({})
     end
@@ -59,13 +61,17 @@ describe Contacts::Google do
     @gmail.contacts
   end
 
-  it 'raises a FetchingError when something goes awry' do
-    response = mock('HTTP response', :code => 666, :class => Net::HTTPBadRequest, :message => 'oh my')
-    Net::HTTP.expects(:start).returns(response)
-
+  it 'raises a fetching error when something goes awry' do
+    connection = mock_connection(false)
+    response = mock_response(:fail)
+    response.expects(:error!).raises(StandardError)
+    Net::HTTP.expects(:new).returns(connection)
+    connection.stubs(:start)
+    connection.expects(:get).returns(response)
+    
     lambda {
       @gmail.get({})
-    }.should raise_error(Contacts::FetchingError)
+    }.should raise_error(StandardError)
   end
 
   it 'parses the resulting feed into name/email pairs' do
@@ -105,10 +111,9 @@ describe Contacts::Google do
       @gmail.stubs(:response_body)
       @gmail.stubs(:parse_contacts)
       
-      @connection = mock('HTTP connection')
-      response = mock('HTTP response')
-      response.stubs(:is_a?).with(Net::HTTPSuccess).returns(true)
-      Net::HTTP.stubs(:start).yields(@connection).returns(response)
+      @connection = mock_connection(false)
+      @response = mock_response
+      Net::HTTP.stubs(:new).returns(@connection)
     end
     
     it 'abstracts ugly parameters behind nicer ones' do
@@ -141,7 +146,7 @@ describe Contacts::Google do
     end
 
     def expect_params(params, partial = false)
-      @connection.expects(:get).with(query_string(params, partial), instance_of(Hash))
+      @connection.expects(:get).with(query_string(params, partial), instance_of(Hash)).returns(@response)
     end
     
   end

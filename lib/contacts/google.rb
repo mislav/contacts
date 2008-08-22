@@ -1,29 +1,25 @@
 require 'contacts'
 require 'cgi'
+require 'time'
+require 'zlib'
+require 'stringio'
 require 'net/http'
 require 'net/https'
 require 'rubygems'
 require 'hpricot'
-require 'time'
-require 'zlib'
-require 'stringio'
 
 module Contacts
   # == Fetching Google Contacts
-  # 
-  # Web applications should use
-  # AuthSub[http://code.google.com/apis/contacts/developers_guide_protocol.html#auth_sub]
-  # proxy authentication to get an authentication token for a Google account.
   # 
   # First, get the user to follow the following URL:
   # 
   #   Contacts::Google.authentication_url('http://mysite.com/invite')
   #
-  # After he authenticates successfully, Google will redirect him back to the target URL
+  # After he authenticates successfully to Google, it will redirect him back to the target URL
   # (specified as argument above) and provide the token GET parameter. Use it to create a
   # new instance of this class and request the contact list:
   #
-  #   gmail = Contacts::Google.new('example@gmail.com', params[:token])
+  #   gmail = Contacts::Google.new(params[:token])
   #   contacts = gmail.contacts
   #   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
   #         ['William Paginate', 'will.paginate@gmail.com'], ...
@@ -32,13 +28,13 @@ module Contacts
   # == Storing a session token
   #
   # The basic token that you will get after the user has authenticated on Google is valid
-  # for only one request. However, you can specify that you want a session token which
+  # for <b>only one request</b>. However, you can specify that you want a session token which
   # doesn't expire:
   # 
   #   Contacts::Google.authentication_url('http://mysite.com/invite', :session => true)
   #
-  # When the user authenticates, he will be redirected back with a token which still isn't
-  # a session token, but can be exchanged for one!
+  # When the user authenticates, he will be redirected back with a token that can be exchanged
+  # for a session token with the following method:
   #
   #   token = Contacts::Google.sesion_token(params[:token])
   #
@@ -103,37 +99,12 @@ module Contacts
     def self.client_login(email, password)
       response = http_start do |google|
         query = query_string(client_login_options.merge(:Email => email, :Passwd => password))
+        puts "posting #{query} to #{ClientLogin}" if Contacts::verbose?
         google.post(ClientLogin, query)
       end
 
       pair = response.body.split(/\n/).detect { |p| p.index('Auth=') == 0 }
       pair.split('=').last if pair
-    end
-    
-    def self.http_start(ssl = true)
-      http = Net::HTTP.start(DOMAIN)
-      if ssl
-        http.use_ssl
-        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      end
-      begin
-        response = yield(http)
-      
-        loop do
-          case response
-          when Net::HTTPSuccess
-            break response
-          when Net::HTTPRedirection
-            location = URI.parse response['Location']
-            puts "Redirected to #{location}"
-            response = http.get(location.path)
-          else
-            response.error!
-          end
-        end
-      ensure
-        http.finish
-      end
     end
     
     attr_reader :user, :token, :headers
@@ -149,15 +120,12 @@ module Contacts
     end
 
     def get(params) # :nodoc:
-      response = Net::HTTP.start(DOMAIN) do |google|
+      self.class.http_start(false) do |google|
         path = FeedsPath + CGI.escape(@user)
         google_params = translate_parameters(params)
         query = self.class.query_string(google_params)
         google.get("#{path}/#{@projection}?#{query}", @headers)
       end
-
-      raise FetchingError.new(response) unless response.is_a? Net::HTTPSuccess
-      response
     end
 
     # Timestamp of last update. This value is available only after the XML
@@ -270,6 +238,50 @@ module Contacts
       def self.authorization_header(token, client = false)
         type = client ? 'GoogleLogin auth' : 'AuthSub token'
         { 'Authorization' => %(#{type}="#{token}") }
+      end
+      
+      def self.http_start(ssl = true)
+        port = ssl ? Net::HTTP::https_default_port : Net::HTTP::http_default_port
+        http = Net::HTTP.new(DOMAIN, port)
+        redirects = 0
+        if ssl
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+        http.start
+
+        begin
+          response = yield(http)
+
+          loop do
+            inspect_response(response) if Contacts::verbose?
+
+            case response
+            when Net::HTTPSuccess
+              break response
+            when Net::HTTPRedirection
+              if redirects == TooManyRedirects::MAX_REDIRECTS
+                raise TooManyRedirects.new(response)
+              end
+              location = URI.parse response['Location']
+              puts "Redirected to #{location}"
+              response = http.get(location.path)
+              redirects += 1
+            else
+              response.error!
+            end
+          end
+        ensure
+          http.finish
+        end
+      end
+
+      def self.inspect_response(response, out = $stderr)
+        out.puts response.inspect
+        for name, value in response
+          out.puts "#{name}: #{value}"
+        end
+        out.puts "----\n#{response.body}\n----" unless response.body.empty?
       end
   end
 end

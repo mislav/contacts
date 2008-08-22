@@ -1,10 +1,24 @@
 module Contacts
-  class FetchingError < RuntimeError
-    attr_reader :response
+  def self.verbose?
+    'irb' == $0
+  end
+  
+  class Error < StandardError
+  end
+  
+  class TooManyRedirects < Error
+    attr_reader :response, :location
+    
+    MAX_REDIRECTS = 2
     
     def initialize(response)
       @response = response
-      super "expected HTTPSuccess, got #{response.class} (#{response.code} #{response.message})"
+      @location = @response['Location']
+      super "exceeded maximum of #{MAX_REDIRECTS} redirects (Location: #{location})"
     end
+  end
+  
+  class FetchingError < RuntimeError
+    
   end
 end

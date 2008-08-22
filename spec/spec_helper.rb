@@ -30,9 +30,10 @@ module HttpMocks
   
   def mock_connection(ssl = true)
     connection = mock('HTTP connection')
-    connection.expects(:finish)
+    connection.stubs(:start)
+    connection.stubs(:finish)
     if ssl
-      connection.expects(:use_ssl)
+      connection.expects(:use_ssl=).with(true)
       connection.expects(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
     end
     connection
