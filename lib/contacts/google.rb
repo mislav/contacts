@@ -153,8 +153,26 @@ module Contacts
       response = get(params)
       parse_contacts response_body(response)
     end
+    
+    # Fetches contacts using multiple API calls when necessary
+    def all_contacts(options = {}, chunk_size = 200)
+      in_chunks(options, :contacts, chunk_size)
+    end
 
     protected
+    
+      def in_chunks(options, what, chunk_size)
+        returns = []
+        offset = 0
+        
+        begin
+          chunk = send(what, options.merge(:offset => offset, :limit => chunk_size))
+          returns.push(*chunk)
+          offset += chunk_size
+        end while chunk.size == chunk_size 
+        
+        returns
+      end
       
       def response_body(response)
         unless response['Content-Encoding'] == 'gzip'

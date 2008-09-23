@@ -157,6 +157,35 @@ describe Contacts::Google do
     end
     
   end
+  
+  describe 'Retrieving all contacts (in chunks)' do
+    
+    before :each do
+      @gmail = create
+    end
+    
+    it 'should make only one API call when no more is needed' do
+      @gmail.expects(:contacts).with(instance_of(Hash)).once.returns((0..8).to_a)
+
+      @gmail.all_contacts({}, 10).should == (0..8).to_a
+    end
+    
+    it 'should make multiple calls to :contacts when needed' do
+      @gmail.expects(:contacts).with(has_entries(:offset => 0 , :limit => 10)).returns(( 0..9 ).to_a)
+      @gmail.expects(:contacts).with(has_entries(:offset => 10, :limit => 10)).returns((10..19).to_a)
+      @gmail.expects(:contacts).with(has_entries(:offset => 20, :limit => 10)).returns((20..24).to_a)
+      
+      @gmail.all_contacts({}, 10).should == (0..24).to_a
+    end
+    
+    it 'should make one extra API call when not sure whether there are more contacts' do
+      @gmail.expects(:contacts).with(has_entries(:offset => 0 , :limit => 10)).returns((0..9).to_a)
+      @gmail.expects(:contacts).with(has_entries(:offset => 10, :limit => 10)).returns([])
+      
+      @gmail.all_contacts({}, 10).should == (0..9).to_a
+    end
+    
+  end
 
   def create
     Contacts::Google.new('dummytoken')
