@@ -116,7 +116,10 @@ module Contacts
     def initialize(token, user_id = 'default', client = false)
       @user    = user_id.to_s
       @token   = token.to_s
-      @headers = { 'Accept-Encoding' => 'gzip' }.update(self.class.authorization_header(@token, client))
+      @headers = {
+        'Accept-Encoding' => 'gzip',
+        'User-Agent' => 'agent-that-accepts-gzip'
+      }.update(self.class.authorization_header(@token, client))
       @projection = 'thin'
     end
 
