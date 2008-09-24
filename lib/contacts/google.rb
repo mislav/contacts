@@ -70,7 +70,8 @@ module Contacts
     # Options are:
     # * <tt>:scope</tt> -- the AuthSub scope in which the resulting token is valid
     #   (default: "http://www.google.com/m8/feeds/contacts/")
-    # * <tt>:secure</tt> -- boolean indicating whether the token will be secure
+    # * <tt>:secure</tt> -- boolean indicating whether the token will be secure. Only available
+    #   for registered domains.
     #   (default: false)
     # * <tt>:session</tt> -- boolean indicating if the token can be exchanged for a session token
     #   (default: false)
