@@ -1,0 +1,10 @@
+windows_live:
+  appid: your_app_id
+  secret: your_app_secret_key
+  security_algorithm: wsignin1.0
+  return_url: http://yourserver.com/your_return_url
+  policy_url: http://yourserver.com/you_policy_url
+  
+yahoo:
+  appid: i%3DB%26p%3DUw70JGIdHWVRbpqYItcMw--
+  secret: a34f389cbd135de4618eed5e23409d34450

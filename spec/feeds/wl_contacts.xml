@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LiveContacts>
+  <Owner>
+    <WindowsLiveID>hugo@hotmail.com</WindowsLiveID>
+  </Owner>
+  <Contacts>
+    <Contact>
+      <Profiles>
+        <Personal />
+      </Profiles>
+      <PreferredEmail>froz@gmail.com</PreferredEmail>
+    </Contact>
+    <Contact>
+      <Profiles>
+        <Personal>
+          <FirstName>Rafael</FirstName>
+          <LastName>Timbo</LastName>
+        </Personal>
+      </Profiles>
+      <PreferredEmail>timbo@hotmail.com</PreferredEmail>
+    </Contact>
+    <Contact>
+      <Profiles>
+        <Personal />
+      </Profiles>
+      <PreferredEmail>betinho@hotmail.com</PreferredEmail>
+    </Contact>
+    </Contacts>
+</LiveContacts>
