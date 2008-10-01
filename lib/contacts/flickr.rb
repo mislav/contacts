@@ -49,7 +49,6 @@ module Contacts
       doc.at('token').inner_text
     end
     
-    
     private
       # Use the key-sorted version of the parameters to construct
       # a string, to which the secret is prepended.
