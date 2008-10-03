@@ -1,8 +1,6 @@
 contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 $:.unshift(contacts_path) unless $:.include?(contacts_path)
 require 'contacts'
-require 'zlib'
-require 'stringio'
 
 module Contacts
   
@@ -115,22 +113,13 @@ module Contacts
           http.finish
         end
       end
-      
-      def self.response_body(response)
-        unless response['Content-Encoding'] == 'gzip'
-          response.body
-        else
-          gzipped = StringIO.new(response.body)
-          Zlib::GzipReader.new(gzipped).read
-        end
-      end
-      
+            
       def self.inspect_response(response, out = $stderr)
         out.puts response.inspect
         for name, value in response
           out.puts "#{name}: #{value}"
         end
-        out.puts "----\n#{response_body response}\n----" unless response.body.empty?
+        out.puts "----\n#{response.body}\n----" unless response.body.empty?
       end
   end
   
