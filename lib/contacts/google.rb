@@ -1,12 +1,10 @@
+contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+$:.unshift(contacts_path) unless $:.include?(contacts_path)
 require 'contacts'
 require 'cgi'
 require 'time'
-require 'zlib'
 require 'stringio'
-require 'net/http'
-require 'net/https'
-require 'rubygems'
-require 'hpricot'
+require 'zlib'
 
 module Contacts
   # == Fetching Google Contacts

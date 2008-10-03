@@ -1,11 +1,9 @@
-require File.dirname(__FILE__) + '/../contacts'
-require 'md5'
-require 'rubygems'
-require 'hpricot'
-require 'net/https'
+contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+$:.unshift(contacts_path) unless $:.include?(contacts_path)
+require 'contacts'
 require 'uri'
-require 'json'
 require 'yaml'
+require 'json'
 
 module Contacts
   # = How I can fetch Yahoo Contacts?

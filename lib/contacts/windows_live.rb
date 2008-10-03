@@ -1,10 +1,8 @@
-require File.dirname(__FILE__) + '/../contacts'
-$:.unshift File.dirname(__FILE__)
-require File.dirname(__FILE__) + '/../../vendor/windowslivelogin'
-require 'net/https'
+contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+$:.unshift(contacts_path) unless $:.include?(contacts_path)
+require 'contacts'
+require File.join File.dirname(__FILE__), %w{.. .. vendor windowslivelogin})
 require 'uri'
-require 'rubygems'
-require 'hpricot'
 require 'yaml'
 
 module Contacts

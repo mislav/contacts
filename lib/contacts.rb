@@ -1,3 +1,9 @@
+require 'md5'
+require 'net/http'
+require 'net/https'
+require 'rubygems'
+require 'hpricot'
+
 module Contacts
   class Contact
     attr_reader :name, :username, :emails

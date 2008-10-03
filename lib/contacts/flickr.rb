@@ -1,13 +1,8 @@
-$:.push File.join File.dirname(__FILE__), '..'
-require 'md5'
+contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+$:.unshift(contacts_path) unless $:.include?(contacts_path)
 require 'contacts'
-require 'cgi'
-require 'time'
 require 'zlib'
 require 'stringio'
-require 'net/http'
-require 'rubygems'
-require 'hpricot'
 
 module Contacts
   
