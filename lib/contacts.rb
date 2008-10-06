@@ -1,4 +1,8 @@
+require 'contacts/version'
+
 module Contacts
+  Identifier = 'Ruby Contacts v' + VERSION::STRING
+  
   class Contact
     attr_reader :name, :username, :emails
     

@@ -16,7 +16,7 @@ describe Contacts::Google do
       connection.expects(:get).with('/m8/feeds/contacts/default/thin?foo=bar', {
           'Authorization' => %(AuthSub token="dummytoken"),
           'Accept-Encoding' => 'gzip',
-          'User-Agent' => 'agent-that-accepts-gzip'
+          'User-Agent' => "Ruby Contacts v#{Contacts::VERSION::STRING} (gzip)"
         }).returns(response)
 
       @gmail.get(:foo => 'bar')

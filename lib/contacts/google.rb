@@ -119,7 +119,7 @@ module Contacts
       @token   = token.to_s
       @headers = {
         'Accept-Encoding' => 'gzip',
-        'User-Agent' => 'agent-that-accepts-gzip'
+        'User-Agent' => Identifier + ' (gzip)'
       }.update(self.class.authorization_header(@token, client))
       @projection = 'thin'
     end
