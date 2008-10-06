@@ -1,7 +1,8 @@
-contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
-$:.unshift(contacts_path) unless $:.include?(contacts_path)
 require 'contacts'
 require File.join(File.dirname(__FILE__), %w{.. .. vendor windowslivelogin})
+
+require 'rubygems'
+require 'hpricot'
 require 'uri'
 require 'yaml'
 

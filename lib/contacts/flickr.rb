@@ -1,6 +1,13 @@
-contacts_path = File.expand_path(File.join(File.dirname(__FILE__), '..'))
-$:.unshift(contacts_path) unless $:.include?(contacts_path)
 require 'contacts'
+
+require 'rubygems'
+require 'hpricot'
+require 'md5'
+require 'cgi'
+require 'time'
+require 'zlib'
+require 'stringio'
+require 'net/http'
 
 module Contacts
   
