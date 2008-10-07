@@ -1,9 +1,11 @@
 require 'rubygems'
-require 'cgi'
 gem 'rspec', '~> 1.1.3'
 require 'spec'
 gem 'mocha', '~> 0.9.0'
 require 'mocha'
+
+require 'cgi'
+require 'fake_web'
 
 module SampleFeeds
   FEED_DIR = File.dirname(__FILE__) + '/feeds/'
