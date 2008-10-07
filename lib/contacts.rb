@@ -1,8 +1,10 @@
 require 'contacts/version'
 
 module Contacts
+  
   Identifier = 'Ruby Contacts v' + VERSION::STRING
   
+  # An object that represents a single contact
   class Contact
     attr_reader :name, :username, :emails
     
@@ -40,4 +42,5 @@ module Contacts
       super "exceeded maximum of #{MAX_REDIRECTS} redirects (Location: #{location})"
     end
   end
+  
 end
