@@ -6,32 +6,38 @@ describe Contacts::Google do
   before :each do
     @gmail = create
   end
+  
+  def create
+    Contacts::Google.new('dummytoken')
+  end
+  
+  after :each do
+    FakeWeb.clean_registry
+  end
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      connection = mock_connection(false)
-      response = mock_response
-      Net::HTTP.expects(:new).with('www.google.com', 80).returns(connection)
-      connection.expects(:start)
-      connection.expects(:get).with('/m8/feeds/contacts/default/thin?foo=bar', {
-          'Authorization' => %(AuthSub token="dummytoken"),
-          'Accept-Encoding' => 'gzip',
-          'User-Agent' => "Ruby Contacts v#{Contacts::VERSION::STRING} (gzip)"
-        }).returns(response)
-
-      @gmail.get(:foo => 'bar')
+      FakeWeb.register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+        :string => 'thin results',
+        :verify => lambda { |req|
+          req['Authorization'].should == %(AuthSub token="dummytoken")
+          req['Accept-Encoding'].should == 'gzip'
+          req['User-Agent'].should == "Ruby Contacts v#{Contacts::VERSION::STRING} (gzip)"
+        }
+        
+      response = @gmail.get({})
+      response.body.should == 'thin results'
     end
     
     it 'with explicit user ID and full projection' do
       @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
       @gmail.projection = 'full'
-      connection = mock_connection(false)
-      response = mock_response
-      Net::HTTP.expects(:new).returns(connection)
-      connection.expects(:start)
-      connection.expects(:get).with('/m8/feeds/contacts/person%40example.com/full?', anything).returns(response)
+      
+      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/person%40example.com/full',
+        :string => 'full results'
 
-      @gmail.get({})
+      response = @gmail.get({})
+      response.body.should == 'full results'
     end
   end
 
@@ -63,16 +69,12 @@ describe Contacts::Google do
   end
 
   it 'raises a fetching error when something goes awry' do
-    connection = mock_connection(false)
-    response = mock_response(:fail)
-    response.expects(:error!).raises(StandardError)
-    Net::HTTP.expects(:new).returns(connection)
-    connection.stubs(:start)
-    connection.expects(:get).returns(response)
-    
+    FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+      :status => [404, 'YOU FAIL']
+      
     lambda {
       @gmail.get({})
-    }.should raise_error(StandardError)
+    }.should raise_error(Net::HTTPServerException)
   end
 
   it 'parses the resulting feed into name/email pairs' do
@@ -118,10 +120,6 @@ describe Contacts::Google do
       @gmail = create
       @gmail.stubs(:response_body)
       @gmail.stubs(:parse_contacts)
-      
-      @connection = mock_connection(false)
-      @response = mock_response
-      Net::HTTP.stubs(:new).returns(@connection)
     end
     
     it 'abstracts ugly parameters behind nicer ones' do
@@ -154,7 +152,8 @@ describe Contacts::Google do
     end
 
     def expect_params(params, partial = false)
-      @connection.expects(:get).with(query_string(params, partial), instance_of(Hash)).returns(@response)
+      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+        :query => params, :query_partial_match => partial
     end
     
   end
@@ -187,8 +186,5 @@ describe Contacts::Google do
     end
     
   end
-
-  def create
-    Contacts::Google.new('dummytoken')
-  end
+  
 end

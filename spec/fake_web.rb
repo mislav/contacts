@@ -17,6 +17,7 @@
 
 require 'fake_net_http'
 require 'singleton'
+require 'cgi'
 
 module OpenURI #:nodoc: all
   class HTTPError < StandardError; end;
@@ -76,8 +77,8 @@ module FakeWeb
   def FakeWeb.register_uri(uri, options); FakeWeb::Registry.instance.register_uri(uri, options); end
 
   # Returns the faked Net::HTTPResponse object associated with +uri+.
-  def FakeWeb.response_for(uri, &block) #:nodoc: :yields: response
-    FakeWeb::Registry.instance.response_for(uri, &block)
+  def FakeWeb.response_for(uri, query_string, req, &block) #:nodoc: :yields: response
+    FakeWeb::Registry.instance.response_for(uri, query_string, req, &block)
   end
 
   # Checks for presence of +uri+ in the +FakeWeb+ registry.
@@ -109,11 +110,38 @@ module FakeWeb
       return uri_map[uri] if registered_uri?(uri)
     end
 
-    def response_for(uri, &block)
-      return registered_uri(uri).response(&block)
+    def response_for(uri, query_string, req, &block)
+      match = registered_uri(uri)
+      compare_queries(match, query_string)
+      match.response(req, &block)
     end
 
     private
+    
+    def compare_queries(registered, query_string)
+      expected_query = registered.options[:query]
+      real_query = parse_query(query_string)
+      
+      eql = if expected_query.respond_to?(:keys) and real_query.respond_to?(:keys)
+        (registered.options[:query_partial_match] or expected_query.size == real_query.size) and
+          expected_query.all? { |key, value| real_query[key.to_s] == value }
+      else
+        expected_query == real_query
+      end
+      
+      unless eql
+        raise "query string mismatch; expected #{expected_query.inspect}, got #{real_query.inspect} on #{registered.uri}"
+      end
+    end
+    
+    def parse_query(query_string)
+      if query_string
+        CGI::parse(query_string).inject({}) do |params, pair|
+          params[pair.first] = pair.last.first
+          params
+        end
+      end
+    end
 
     def normalize_uri(uri)
       case uri
@@ -141,7 +169,9 @@ module FakeWeb
       self.options = options
     end
 
-    def response(&block)
+    def response(req, &block)
+      verify_request(req)
+      
       if has_baked_response?
         response = baked_response
       else
@@ -209,6 +239,11 @@ module FakeWeb
       if options.has_key?(:status); options[:status]
       else; [ 200, 'OK' ]
       end
+    end
+    
+    def verify_request(req)
+      return unless options.has_key?(:verify)
+      options[:verify].call(req)
     end
   end
 
