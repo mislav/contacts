@@ -55,6 +55,7 @@ module Net #:nodoc:
       prot = use_ssl ? "https" : "http"
       uri = "#{prot}://#{self.address}#{req.path}"
       uri, query_string = uri.split('?')
+      query_string = body unless req.method == 'GET'
       
       if FakeWeb.registered_uri?(uri)
         @socket = Net::HTTP.socket_type.new
@@ -62,7 +63,7 @@ module Net #:nodoc:
       else
         # original_net_http_connect
         # return original_net_http_request(req, body, &block)
-        raise "unexpected HTTP request to #{uri}"
+        raise "unexpected HTTP #{req.method} to #{uri}"
       end
     end
 

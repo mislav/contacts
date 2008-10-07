@@ -17,7 +17,7 @@ describe Contacts::Google do
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      FakeWeb.register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
         :string => 'thin results',
         :verify => lambda { |req|
           req['Authorization'].should == %(AuthSub token="dummytoken")

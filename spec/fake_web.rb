@@ -112,11 +112,18 @@ module FakeWeb
 
     def response_for(uri, query_string, req, &block)
       match = registered_uri(uri)
+      compare_methods(match, req)
       compare_queries(match, query_string)
       match.response(req, &block)
     end
 
     private
+    
+    def compare_methods(registered, req)
+      unless registered.method == req.method
+        raise "HTTP method mismatch; expected #{registered.method}, got #{req.method} on #{registered.uri}"
+      end
+    end
     
     def compare_queries(registered, query_string)
       expected_query = registered.options[:query]
@@ -167,6 +174,10 @@ module FakeWeb
     def initialize(uri, options)
       self.uri = uri
       self.options = options
+    end
+    
+    def method
+      options[:method] || 'GET'
     end
 
     def response(req, &block)
