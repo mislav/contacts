@@ -17,7 +17,7 @@ describe Contacts::Google do
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
         :string => 'thin results',
         :verify => lambda { |req|
           req['Authorization'].should == %(AuthSub token="dummytoken")
@@ -33,7 +33,7 @@ describe Contacts::Google do
       @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
       @gmail.projection = 'full'
       
-      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/person%40example.com/full',
+      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/person%40example.com/full',
         :string => 'full results'
 
       response = @gmail.get({})
@@ -69,7 +69,7 @@ describe Contacts::Google do
   end
 
   it 'raises a fetching error when something goes awry' do
-    FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+    FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
       :status => [404, 'YOU FAIL']
       
     lambda {
@@ -152,7 +152,7 @@ describe Contacts::Google do
     end
 
     def expect_params(params, partial = false)
-      FakeWeb::register_uri 'http://www.google.com/m8/feeds/contacts/default/thin',
+      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
         :query => params, :query_partial_match => partial
     end
     
