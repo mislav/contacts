@@ -30,9 +30,4 @@ describe Contacts::Contact do
     end
   end
   
-  it "should fail without first argument (email)" do
-    lambda {
-      Contacts::Contact.new()
-    }.should raise_error(ArgumentError)
-  end
 end

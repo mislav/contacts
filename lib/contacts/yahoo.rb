@@ -227,7 +227,7 @@ module Contacts
             name.strip!
           end
         end
-        contacts.push([name, email])
+        contacts.push Contact.new(email, name)
       end
       return contacts
     end

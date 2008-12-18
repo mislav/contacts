@@ -19,13 +19,12 @@ describe Contacts::Yahoo do
 
     redirect_path = '/?appid=i%3DB%26p%3DUw70JGIdHWVRbpqYItcMw--&token=AB.KoEg8vBwvJKFkwfcDTJEMKhGeAD6KhiDe0aZLCvoJzMeQG00-&appdata=&ts=1218501215&sig=d381fba89c7e9d3c14788720733c3fbf'
                             
-    
-    @yahoo.contacts(redirect_path).should == [ ['Hugo Barauna', 'hugo.barauna@gmail.com'],
-                                ['Nina Benchimol', 'nina@hotmail.com'],
-                                ['Andrea Dimitri', 'and@yahoo.com'],
-                                ['Ricardo Fiorelli', 'ricardo@poli.usp.br'],
-                                ['Priscila', 'pizinha@yahoo.com.br']
-                              ]
+    results = @yahoo.contacts(redirect_path)
+    results.should have_contact('Hugo Barauna', 'hugo.barauna@gmail.com')
+    results.should have_contact('Nina Benchimol', 'nina@hotmail.com')
+    results.should have_contact('Andrea Dimitri', 'and@yahoo.com')
+    results.should have_contact('Ricardo Fiorelli', 'ricardo@poli.usp.br')
+    results.should have_contact('Priscila', 'pizinha@yahoo.com.br')
   end
 
   it 'should validate yahoo redirect signature' do
@@ -58,12 +57,11 @@ describe Contacts::Yahoo do
   it 'should parse the contacts json response' do
     json = read_file('yh_contacts.txt')
     
-    Contacts::Yahoo.parse_contacts(json).should == [ ['Hugo Barauna', 'hugo.barauna@gmail.com'],
-                                                     ['Nina Benchimol', 'nina@hotmail.com'],
-                                                     ['Andrea Dimitri', 'and@yahoo.com'],
-                                                     ['Ricardo Fiorelli', 'ricardo@poli.usp.br'],
-                                                     ['Priscila', 'pizinha@yahoo.com.br']
-                                                   ]
+    Contacts::Yahoo.parse_contacts(json).should have_contact('Hugo Barauna', 'hugo.barauna@gmail.com')
+    Contacts::Yahoo.parse_contacts(json).should have_contact('Nina Benchimol', 'nina@hotmail.com')
+    Contacts::Yahoo.parse_contacts(json).should have_contact('Andrea Dimitri', 'and@yahoo.com')
+    Contacts::Yahoo.parse_contacts(json).should have_contact('Ricardo Fiorelli', 'ricardo@poli.usp.br')
+    Contacts::Yahoo.parse_contacts(json).should have_contact('Priscila', 'pizinha@yahoo.com.br')
   end
 
   it 'should can be initialized by a YAML file' do
@@ -73,5 +71,13 @@ describe Contacts::Yahoo do
 
   def read_file(file)
     File.open(@path + file, 'r+').read
+  end
+
+  def have_contact(name, email)
+    matcher_class = Class.new()
+    matcher_class.instance_eval do 
+      define_method(:matches?) {|some_contacts| some_contacts.any? {|a_contact| a_contact.name == name && a_contact.emails.include?(email)}}
+    end
+    matcher_class.new
   end
 end
