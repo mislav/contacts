@@ -5,8 +5,8 @@ require 'hpricot'
 require 'md5'
 require 'net/https'
 require 'uri'
-require 'json'
 require 'yaml'
+require 'json' unless defined? ActiveSupport::JSON
 
 module Contacts
   # = How I can fetch Yahoo Contacts?
@@ -207,12 +207,16 @@ module Contacts
     # This method parses the JSON contacts document and returns an array
     # contaning all the user's contacts.
     #
-    # ==== Paramaters
-    # * json <String>:: A String the user's contacts ni JSON format
+    # ==== Parameters
+    # * json <String>:: A String of user's contacts in JSON format
     #
     def self.parse_contacts(json)
-      people = JSON.parse(json)
       contacts = []
+      people = if defined? ActiveSupport::JSON
+        ActiveSupport::JSON.decode(json)
+      else
+        JSON.parse(json)
+      end
 
       people['contacts'].each do |contact|
         name = nil
