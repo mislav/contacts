@@ -154,7 +154,8 @@ module Contacts
           name = "#{first_name} #{last_name}"
           name.strip!
         end
-        contacts.push([name, email])
+        new_contact = Contact.new(email, name)
+        contacts << new_contact
       end
 
       return contacts

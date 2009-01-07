@@ -10,10 +10,14 @@ describe Contacts::WindowsLive do
   
   it 'parse the XML contacts document' do
     contacts = Contacts::WindowsLive.parse_xml(contacts_xml)
-    contacts.should == [  [nil, 'froz@gmail.com'], 
-                          ['Rafael Timbo', 'timbo@hotmail.com'], 
-                          [nil, 'betinho@hotmail.com']
-                       ]
+    
+    contacts[0].name.should be_nil
+    contacts[0].email.should == 'froz@gmail.com'
+    contacts[1].name.should == 'Rafael Timbo'
+    contacts[1].email.should == 'timbo@hotmail.com'
+    contacts[2].name.should be_nil
+    contacts[2].email.should == 'betinho@hotmail.com'
+
   end
 
   it 'should can be initialized by a YAML file' do
