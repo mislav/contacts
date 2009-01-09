@@ -20,7 +20,7 @@ module Contacts
     end
     
     def inspect
-      %!#<Contacts::Contact "#{name}" (#{email})>!
+      %!#<Contacts::Contact "#{name}"#{email ? " (#{email})" : ''}>!
     end
   end
   
