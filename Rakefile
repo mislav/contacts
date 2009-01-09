@@ -5,7 +5,7 @@ task :default => :spec
 
 spec_opts = 'spec/spec.opts'
 spec_glob = FileList['spec/**/*_spec.rb']
-libs = ['lib', 'spec']
+libs = ['lib', 'spec', 'vendor/fakeweb/lib']
 
 desc 'Run all specs in spec directory'
 Spec::Rake::SpecTask.new(:spec) do |t|

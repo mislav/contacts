@@ -6,6 +6,7 @@ require 'mocha'
 
 require 'cgi'
 require 'fake_web'
+FakeWeb.allow_net_connect = false
 
 module SampleFeeds
   FEED_DIR = File.dirname(__FILE__) + '/feeds/'

@@ -17,13 +17,14 @@ describe Contacts::Google do
 
   describe 'fetches contacts feed via HTTP GET' do
     it 'with defaults' do
-      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
+      FakeWeb::register_uri(:get, 'www.google.com/m8/feeds/contacts/default/thin',
         :string => 'thin results',
         :verify => lambda { |req|
           req['Authorization'].should == %(AuthSub token="dummytoken")
           req['Accept-Encoding'].should == 'gzip'
           req['User-Agent'].should == "Ruby Contacts v#{Contacts::VERSION::STRING} (gzip)"
         }
+      )
         
       response = @gmail.get({})
       response.body.should == 'thin results'
@@ -33,8 +34,9 @@ describe Contacts::Google do
       @gmail = Contacts::Google.new('dummytoken', 'person@example.com')
       @gmail.projection = 'full'
       
-      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/person%40example.com/full',
+      FakeWeb::register_uri(:get, 'www.google.com/m8/feeds/contacts/person%40example.com/full',
         :string => 'full results'
+      )
 
       response = @gmail.get({})
       response.body.should == 'full results'
@@ -69,8 +71,9 @@ describe Contacts::Google do
   end
 
   it 'raises a fetching error when something goes awry' do
-    FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
+    FakeWeb::register_uri(:get, 'www.google.com/m8/feeds/contacts/default/thin',
       :status => [404, 'YOU FAIL']
+    )
       
     lambda {
       @gmail.get({})
@@ -137,7 +140,10 @@ describe Contacts::Google do
     end
 
     it 'should have implicit :descending with :order' do
-      expect_params({ 'orderby' => 'lastmodified', 'sortorder' => 'descending' }, true)
+      expect_params 'orderby' => 'lastmodified', 
+                    'sortorder' => 'descending',
+                    'max-results' => '200'
+                    
       @gmail.contacts :order => 'lastmodified'
     end
 
@@ -151,9 +157,9 @@ describe Contacts::Google do
       @gmail.contacts :limit => nil, :offset => 0
     end
 
-    def expect_params(params, partial = false)
-      FakeWeb::register_uri 'www.google.com/m8/feeds/contacts/default/thin',
-        :query => params, :query_partial_match => partial
+    def expect_params(params)
+      query_string = Contacts::Google.query_string(params)
+      FakeWeb::register_uri(:get, "www.google.com/m8/feeds/contacts/default/thin?#{query_string}")
     end
     
   end

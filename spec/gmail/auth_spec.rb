@@ -35,30 +35,26 @@ describe Contacts::Google, '.authentication_url' do
   end
 
   it 'should be able to exchange one-time for session token' do
-    # connection = mock_connection
-    # response = mock_response
-    # Net::HTTP.expects(:new).with('www.google.com', 443).returns(connection)
-    # connection.expects(:start)
-    # connection.expects(:get).with('/accounts/AuthSubSessionToken', 'Authorization' => %(AuthSub token="dummytoken")).returns(response)
-    # response.expects(:body).returns()
-    FakeWeb::register_uri 'https://www.google.com/accounts/AuthSubSessionToken',
+    FakeWeb::register_uri(:get, 'https://www.google.com/accounts/AuthSubSessionToken',
       :string => "Token=G25aZ-v_8B\nExpiration=20061004T123456Z",
       :verify => lambda { |req|
         req['Authorization'].should == %(AuthSub token="dummytoken")
       }
+    )
 
     Contacts::Google.session_token('dummytoken').should == 'G25aZ-v_8B'
   end
   
   it "should support client login" do
-    FakeWeb::register_uri 'https://www.google.com/accounts/ClientLogin',
+    FakeWeb::register_uri(:post, 'https://www.google.com/accounts/ClientLogin',
       :method => 'POST',
       :query => {
         'accountType' => 'GOOGLE', 'service' => 'cp', 'source' => 'Contacts-Ruby',
         'Email' => 'mislav@example.com', 'Passwd' => 'dummyPassword'
       },
       :string => "SID=klw4pHhL_ry4jl6\nLSID=Ij6k-7Ypnc1sxm\nAuth=EuoqMSjN5uo-3B"
-
+    )
+    
     Contacts::Google.client_login('mislav@example.com', 'dummyPassword').should == 'EuoqMSjN5uo-3B'
   end
   
