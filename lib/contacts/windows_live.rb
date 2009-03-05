@@ -113,7 +113,6 @@ module Contacts
     # the XML contacts document
     #
     def access_live_contacts_api
-      Net::HTTP.version_1_1
       http = http = Net::HTTP.new('livecontacts.services.live.com', 443)
       http.use_ssl = true
 
