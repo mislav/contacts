@@ -12,11 +12,11 @@ They will authenticate on Google and it will send them back to the URL
 provided. Google will add a token GET parameter to the query part of the URL.
 Use that token in the next step:
 
-  gmail = Contacts::Google.new('example@gmail.com', params[:token])
-  contacts = gmail.contacts
-  #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
-        ['William Paginate', 'will.paginate@gmail.com'], ...
-        ]
+  gmail = Contacts::Google.new(params[:token])
+  gmail.contacts
+  # => [#<Contact 1>, #<Contact 2>, ...]
+
+The resulting Contacts::Contact objects have `name` and `email` properties.
 
 Read more in Contacts::Google. I plan to support more APIs (Microsoft Live, for
 starters); feel free to contribute.

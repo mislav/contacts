@@ -21,10 +21,8 @@ module Contacts
   # new instance of this class and request the contact list:
   #
   #   gmail = Contacts::Google.new(params[:token])
-  #   contacts = gmail.contacts
-  #   #-> [ ['Fitzgerald', 'fubar@gmail.com', 'fubar@example.com'],
-  #         ['William Paginate', 'will.paginate@gmail.com'], ...
-  #         ]
+  #   gmail.contacts
+  #   # => [#<Contact 1>, #<Contact 2>, ...]
   #
   # == Storing a session token
   #
